@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Blog & Todo{% endblock %}
+
+{% block content %}
+<section class="section">
+    <h1 class="title page-title has-text-centered">Welcome, {{ username }}! 👋</h1>
+    <h2 class="subtitle has-text-centered">What would you like to do today?</h2>
+
+    <div class="columns is-centered mt-5">
+        <div class="column is-4">
+            <a href="{{ url_for('todo') }}">
+                <div class="card dashboard-card">
+                    <div class="card-content has-text-centered">
+                        <span class="icon is-large has-text-info">
+                            <i class="fas fa-tasks fa-3x"></i>
+                        </span>
+                        <h3 class="title is-4 mt-3">My Todos</h3>
+                        <p class="subtitle is-6">Manage your daily tasks</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="column is-4">
+            <a href="{{ url_for('blog') }}">
+                <div class="card dashboard-card">
+                    <div class="card-content has-text-centered">
+                        <span class="icon is-large has-text-success">
+                            <i class="fas fa-blog fa-3x"></i>
+                        </span>
+                        <h3 class="title is-4 mt-3">My Blog</h3>
+                        <p class="subtitle is-6">Write and share your thoughts</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
