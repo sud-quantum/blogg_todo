@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Blog & Todo{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="columns is-centered">
+        <div class="column is-5">
+            <div class="card">
+                <div class="card-content">
+                    <h1 class="title has-text-centered">Register</h1>
+                    <form method="POST">
+                        <div class="field">
+                            <label class="label">Username <span class="has-text-danger">*</span></label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" name="username" placeholder="Choose a username" required>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Email <span class="has-text-danger">*</span></label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="email" name="email" placeholder="your.email@example.com" required>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Password <span class="has-text-danger">*</span></label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="password" name="password" placeholder="Choose a password" required>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="columns">
+                            <div class="column is-6">
+                                <div class="field">
+                                    <label class="label">Date of Birth <span class="has-text-danger">*</span></label>
+                                    <div class="control has-icons-left">
+                                        <input class="input" type="date" name="dob" required>
+                                        <span class="icon is-small is-left">
+                                            <i class="fas fa-calendar"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="column is-6">
+                                <div class="field">
+                                    <label class="label">Gender <span class="has-text-danger">*</span></label>
+                                    <div class="control">
+                                        <div class="select is-fullwidth">
+                                            <select name="gender" required>
+                                                <option value="">Select gender</option>
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                                <option value="prefer_not_to_say">Prefer not to say</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label">Phone (Optional)</label>
+                            <div class="control has-icons-left">
+                                <input class="input" type="tel" name="phone" placeholder="+1 234 567 8900">
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-success is-fullwidth" type="submit">
+                                    <span class="icon"><i class="fas fa-user-plus"></i></span>
+                                    <span>Register</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <hr>
+                    <p class="has-text-centered">
+                        Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

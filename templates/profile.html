@@ -1,0 +1,683 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Blog & Todo{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <h1 class="title page-title">👤 User Profile</h1>
+        
+        <div class="columns mb-5">
+            <!-- User Info Card -->
+            <div class="column is-4">
+                <div class="card">
+                    <div class="card-content has-text-centered">
+                        <span class="icon is-large has-text-info mb-3">
+                            <i class="fas fa-user-circle fa-5x"></i>
+                        </span>
+                        <h2 class="title is-4 mb-4">{{ user.username }}</h2>
+                        <p class="subtitle is-6 mb-3">{{ user.email }}</p>
+                        <p class="has-text-grey is-size-7 mb-4">Member since {{ user.created_at[:10] }}</p>
+                        
+                        <button class="button is-info is-small is-fullwidth mb-3" onclick="openEditModal()">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                            <span>Edit Profile</span>
+                        </button>
+                        
+                        <hr>
+                        
+                        <!-- User Details -->
+                        <div class="has-text-left mt-4">
+                            <div class="mb-3">
+                                <p class="has-text-weight-semibold mb-1">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-info"><i class="fas fa-birthday-cake"></i></span>
+                                        <span>Date of Birth</span>
+                                    </span>
+                                </p>
+                                <p class="ml-4">{{ user.dob }}</p>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <p class="has-text-weight-semibold mb-1">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-info"><i class="fas fa-venus-mars"></i></span>
+                                        <span>Gender</span>
+                                    </span>
+                                </p>
+                                <p class="ml-4">{{ user.gender.replace('_', ' ').title() if user.gender else 'Not specified' }}</p>
+                            </div>
+                            
+                            {% if user.phone %}
+                            <div class="mb-3">
+                                <p class="has-text-weight-semibold mb-1">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-info"><i class="fas fa-phone"></i></span>
+                                        <span>Phone</span>
+                                    </span>
+                                </p>
+                                <p class="ml-4">{{ user.phone }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- User Stats Summary -->
+                        <div class="has-text-left mt-4">
+                            <div class="is-flex is-justify-content-space-between mb-2">
+                                <span class="has-text-weight-semibold">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-info"><i class="fas fa-tasks"></i></span>
+                                        <span>Total Tasks</span>
+                                    </span>
+                                </span>
+                                <span class="tag is-info">{{ stats.total_todos }}</span>
+                            </div>
+                            
+                            <div class="is-flex is-justify-content-space-between mb-2">
+                                <span class="has-text-weight-semibold">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-success"><i class="fas fa-check-circle"></i></span>
+                                        <span>Completed</span>
+                                    </span>
+                                </span>
+                                <span class="tag is-success">{{ stats.completed_todos }}</span>
+                            </div>
+                            
+                            <div class="is-flex is-justify-content-space-between mb-2">
+                                <span class="has-text-weight-semibold">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-warning"><i class="fas fa-fire"></i></span>
+                                        <span>Current Streak</span>
+                                    </span>
+                                </span>
+                                <span class="tag is-warning">{{ streak }} days</span>
+                            </div>
+                            
+                            <div class="is-flex is-justify-content-space-between mb-2">
+                                <span class="has-text-weight-semibold">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-link"><i class="fas fa-blog"></i></span>
+                                        <span>Blog Posts</span>
+                                    </span>
+                                </span>
+                                <span class="tag is-link">{{ stats.total_blogs }}</span>
+                            </div>
+                            
+                            <div class="is-flex is-justify-content-space-between">
+                                <span class="has-text-weight-semibold">
+                                    <span class="icon-text">
+                                        <span class="icon has-text-primary"><i class="fas fa-percentage"></i></span>
+                                        <span>Completion Rate</span>
+                                    </span>
+                                </span>
+                                <span class="tag is-primary">{{ stats.completion_rate }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Management Card -->
+            <div class="column is-8">
+                <div class="card">
+                    <div class="card-content">
+                        <h3 class="title is-4">📁 Manage Categories</h3>
+                        <p class="subtitle is-6">Organize your todos with custom categories</p>
+
+                        <!-- Add Category Form -->
+                        <div class="box">
+                            <h4 class="title is-6">Add New Category</h4>
+                            <div class="field has-addons">
+                                <div class="control is-expanded">
+                                    <input class="input" type="text" id="categoryName" placeholder="Category name">
+                                </div>
+                                <div class="control">
+                                    <input class="input" type="color" id="categoryColor" value="#3498db" style="width: 60px;">
+                                </div>
+                                <div class="control">
+                                    <button class="button is-primary" onclick="addCategory()">
+                                        <span class="icon"><i class="fas fa-plus"></i></span>
+                                        <span>Add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Categories List with Scroll -->
+                        <div id="categoriesList" style="max-height: 300px; overflow-y: auto;">
+                            {% if categories %}
+                                <div class="columns is-multiline">
+                                    {% for category in categories %}
+                                    <div class="column is-4" id="category-{{ category.id }}">
+                                        <div class="box category-item">
+                                            <div class="is-flex is-justify-content-space-between is-align-items-center">
+                                                <div class="is-flex is-align-items-center">
+                                                    <span class="category-color-dot" style="background: {{ category.color }};"></span>
+                                                    <span class="ml-2 has-text-weight-semibold is-size-7">{{ category.name }}</span>
+                                                </div>
+                                                <button class="button is-small is-danger is-light" onclick="deleteCategory({{ category.id }})">
+                                                    <span class="icon is-small"><i class="fas fa-trash"></i></span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="notification is-info is-light">
+                                    <p>No categories yet. Add your first category above!</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="columns is-multiline mb-5">
+            <div class="column is-3">
+                <div class="card dashboard-stat-card">
+                    <div class="card-content has-text-centered">
+                        <p class="heading">Total Todos</p>
+                        <p class="title">{{ stats.total_todos }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="card dashboard-stat-card">
+                    <div class="card-content has-text-centered">
+                        <p class="heading">Completed</p>
+                        <p class="title has-text-success">{{ stats.completed_todos }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="card dashboard-stat-card">
+                    <div class="card-content has-text-centered">
+                        <p class="heading">Today's Tasks</p>
+                        <p class="title">{{ stats.today_completed }}/{{ stats.today_todos }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-3">
+                <div class="card dashboard-stat-card">
+                    <div class="card-content has-text-centered">
+                        <p class="heading">Total Blogs</p>
+                        <p class="title has-text-info">{{ stats.total_blogs }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress and Streak -->
+        <div class="columns mb-5">
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-content">
+                        <h3 class="title is-5">Completion Rate</h3>
+                        <progress class="progress is-success" value="{{ stats.completion_rate }}" max="100">{{ stats.completion_rate }}%</progress>
+                        <p class="has-text-centered has-text-weight-bold">{{ stats.completion_rate }}%</p>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-content has-text-centered">
+                        <h3 class="title is-5">Current Streak</h3>
+                        <p class="title is-1 has-text-warning">🔥 {{ streak }}</p>
+                        <p class="subtitle is-6">Days in a row</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Priority Breakdown -->
+        <div class="card mb-5">
+            <div class="card-content">
+                <div class="is-flex is-justify-content-space-between is-align-items-center mb-4">
+                    <h3 class="title is-5 mb-0">Priority Breakdown</h3>
+                    <div class="buttons has-addons">
+                        <button class="button is-small is-info" id="btnActive" onclick="showPriorityView('active')">Active</button>
+                        <button class="button is-small" id="btnCompleted" onclick="showPriorityView('completed')">Completed</button>
+                        <button class="button is-small" id="btnOverall" onclick="showPriorityView('overall')">Overall</button>
+                    </div>
+                </div>
+                
+                <!-- Active Tasks View -->
+                <div id="priorityActive" class="priority-view">
+                    <div class="priority-circles">
+                        {% for priority in range(1, 6) %}
+                        <div class="priority-circle-container">
+                            <div class="priority-circle priority-{{ priority }}">
+                                <svg viewBox="0 0 36 36" class="circular-chart">
+                                    <path class="circle-bg"
+                                        d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <path class="circle"
+                                        stroke-dasharray="{{ (stats.priority_stats[priority] / (stats.total_todos - stats.completed_todos if (stats.total_todos - stats.completed_todos) > 0 else 1) * 100)|round }}, 100"
+                                        d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <text x="18" y="20.35" class="percentage">{{ stats.priority_stats[priority] }}</text>
+                                </svg>
+                            </div>
+                            <p class="has-text-centered mt-2">Priority {{ priority }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Completed Tasks View -->
+                <div id="priorityCompleted" class="priority-view" style="display: none;">
+                    <div class="priority-circles">
+                        {% for priority in range(1, 6) %}
+                        <div class="priority-circle-container">
+                            <div class="priority-circle priority-{{ priority }}">
+                                <svg viewBox="0 0 36 36" class="circular-chart">
+                                    <path class="circle-bg"
+                                        d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <path class="circle"
+                                        stroke-dasharray="{{ (stats.priority_stats_completed[priority] / (stats.completed_todos if stats.completed_todos > 0 else 1) * 100)|round }}, 100"
+                                        d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <text x="18" y="20.35" class="percentage">{{ stats.priority_stats_completed[priority] }}</text>
+                                </svg>
+                            </div>
+                            <p class="has-text-centered mt-2">Priority {{ priority }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Overall Tasks View -->
+                <div id="priorityOverall" class="priority-view" style="display: none;">
+                    <div class="priority-circles">
+                        {% for priority in range(1, 6) %}
+                        <div class="priority-circle-container">
+                            <div class="priority-circle priority-{{ priority }}">
+                                <svg viewBox="0 0 36 36" class="circular-chart">
+                                    <path class="circle-bg"
+                                        d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <path class="circle"
+                                        stroke-dasharray="{{ (stats.priority_stats_overall[priority] / (stats.total_todos if stats.total_todos > 0 else 1) * 100)|round }}, 100"
+                                        d="M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                                    />
+                                    <text x="18" y="20.35" class="percentage">{{ stats.priority_stats_overall[priority] }}</text>
+                                </svg>
+                            </div>
+                            <p class="has-text-centered mt-2">Priority {{ priority }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Calendar -->
+        <div class="card mb-5">
+            <div class="card-content">
+                <h3 class="title is-5 mb-4">Activity Calendar (Last 90 Days)</h3>
+                <div class="activity-calendar">
+                    {% for activity in activity_data %}
+                    <div class="activity-day activity-level-{{ [0, 1, 2, 3, 4][(activity.count / 5)|round|int] if activity.count <= 20 else 4 }}" 
+                         title="{{ activity.date }}: {{ activity.count }} tasks completed">
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="activity-legend mt-3">
+                    <span class="mr-2">Less</span>
+                    <div class="activity-day activity-level-0"></div>
+                    <div class="activity-day activity-level-1"></div>
+                    <div class="activity-day activity-level-2"></div>
+                    <div class="activity-day activity-level-3"></div>
+                    <div class="activity-day activity-level-4"></div>
+                    <span class="ml-2">More</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Stats -->
+        <div class="columns mb-5">
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-content">
+                        <h3 class="title is-5">This Week</h3>
+                        <p class="subtitle">{{ stats.week_completed }} tasks completed</p>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-content">
+                        <h3 class="title is-5">This Month</h3>
+                        <p class="subtitle">{{ stats.month_completed }} tasks completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+    </div>
+</section>
+
+<script>
+    async function addCategory() {
+        const name = document.getElementById('categoryName').value.trim();
+        const color = document.getElementById('categoryColor').value;
+
+        if (!name) {
+            showToast('Please enter a category name', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/category/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, color })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast('Category added successfully!', 'success');
+                location.reload();
+            } else {
+                showToast(data.error || 'Failed to add category', 'danger');
+            }
+        } catch (error) {
+            console.error('Error adding category:', error);
+            showToast('Error adding category', 'danger');
+        }
+    }
+
+    async function deleteCategory(id) {
+        if (!confirm('Are you sure you want to delete this category? Todos with this category will not be deleted.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/category/delete/${id}`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                showToast('Category deleted successfully!', 'success');
+                document.getElementById(`category-${id}`).remove();
+            } else {
+                showToast('Failed to delete category', 'danger');
+            }
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            showToast('Error deleting category', 'danger');
+        }
+    }
+
+    function showToast(message, category) {
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `notification is-${category} toast-notification`;
+        toast.innerHTML = `
+            <button class="delete"></button>
+            ${message}
+        `;
+
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+
+        const deleteBtn = toast.querySelector('.delete');
+        deleteBtn.addEventListener('click', () => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    function showPriorityView(view) {
+        // Hide all views
+        document.getElementById('priorityActive').style.display = 'none';
+        document.getElementById('priorityCompleted').style.display = 'none';
+        document.getElementById('priorityOverall').style.display = 'none';
+        
+        // Remove active class from all buttons
+        document.getElementById('btnActive').classList.remove('is-info');
+        document.getElementById('btnCompleted').classList.remove('is-info');
+        document.getElementById('btnOverall').classList.remove('is-info');
+        
+        // Show selected view and activate button
+        if (view === 'active') {
+            document.getElementById('priorityActive').style.display = 'block';
+            document.getElementById('btnActive').classList.add('is-info');
+        } else if (view === 'completed') {
+            document.getElementById('priorityCompleted').style.display = 'block';
+            document.getElementById('btnCompleted').classList.add('is-info');
+        } else if (view === 'overall') {
+            document.getElementById('priorityOverall').style.display = 'block';
+            document.getElementById('btnOverall').classList.add('is-info');
+        }
+    }
+</script>
+
+<!-- Edit Profile Modal -->
+<div class="modal" id="editProfileModal">
+    <div class="modal-background" onclick="closeEditModal()"></div>
+    <div class="modal-card">
+        <header class="modal-card-head">
+            <p class="modal-card-title">Edit Profile</p>
+            <button class="delete" aria-label="close" onclick="closeEditModal()"></button>
+        </header>
+        <section class="modal-card-body">
+            <div class="field">
+                <label class="label">Username</label>
+                <div class="control has-icons-left">
+                    <input class="input" type="text" id="editUsername" value="{{ user.username }}">
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-user"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Email</label>
+                <div class="control has-icons-left">
+                    <input class="input" type="email" id="editEmail" value="{{ user.email }}">
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-envelope"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="columns">
+                <div class="column is-6">
+                    <div class="field">
+                        <label class="label">Date of Birth</label>
+                        <div class="control has-icons-left">
+                            <input class="input" type="date" id="editDob" value="{{ user.dob }}">
+                            <span class="icon is-small is-left">
+                                <i class="fas fa-calendar"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="column is-6">
+                    <div class="field">
+                        <label class="label">Gender</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select id="editGender">
+                                    <option value="male" {% if user.gender == 'male' %}selected{% endif %}>Male</option>
+                                    <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
+                                    <option value="other" {% if user.gender == 'other' %}selected{% endif %}>Other</option>
+                                    <option value="prefer_not_to_say" {% if user.gender == 'prefer_not_to_say' %}selected{% endif %}>Prefer not to say</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Phone (Optional)</label>
+                <div class="control has-icons-left">
+                    <input class="input" type="tel" id="editPhone" value="{{ user.phone or '' }}">
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-phone"></i>
+                    </span>
+                </div>
+            </div>
+
+            <div class="field">
+                <label class="label">Current Password (Required to change password)</label>
+                <div class="control has-icons-left">
+                    <input class="input" type="password" id="editCurrentPassword" placeholder="Enter current password">
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-lock"></i>
+                    </span>
+                </div>
+                <p class="help">Required only if you want to change your password</p>
+            </div>
+
+            <div class="field">
+                <label class="label">New Password</label>
+                <div class="control has-icons-left">
+                    <input class="input" type="password" id="editPassword" placeholder="Enter new password">
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-key"></i>
+                    </span>
+                </div>
+                <p class="help">Leave blank to keep current password</p>
+            </div>
+
+            <div class="field">
+                <label class="label">Confirm New Password</label>
+                <div class="control has-icons-left">
+                    <input class="input" type="password" id="editConfirmPassword" placeholder="Confirm new password">
+                    <span class="icon is-small is-left">
+                        <i class="fas fa-key"></i>
+                    </span>
+                </div>
+            </div>
+        </section>
+        <footer class="modal-card-foot">
+            <button class="button is-success" onclick="saveProfile()">Save changes</button>
+            <button class="button" onclick="closeEditModal()">Cancel</button>
+        </footer>
+    </div>
+</div>
+
+<script>
+    function openEditModal() {
+        document.getElementById('editProfileModal').classList.add('is-active');
+        document.documentElement.classList.add('is-clipped');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editProfileModal').classList.remove('is-active');
+        document.documentElement.classList.remove('is-clipped');
+    }
+
+    async function saveProfile() {
+        const username = document.getElementById('editUsername').value;
+        const email = document.getElementById('editEmail').value;
+        const dob = document.getElementById('editDob').value;
+        const gender = document.getElementById('editGender').value;
+        const phone = document.getElementById('editPhone').value;
+        const currentPassword = document.getElementById('editCurrentPassword').value;
+        const newPassword = document.getElementById('editPassword').value;
+        const confirmPassword = document.getElementById('editConfirmPassword').value;
+
+        if (!username || !email || !dob || !gender) {
+            showToast('Please fill all required fields', 'danger');
+            return;
+        }
+
+        // Password change validation
+        if (newPassword || confirmPassword || currentPassword) {
+            if (!currentPassword) {
+                showToast('Please enter your current password to change password', 'warning');
+                return;
+            }
+            if (!newPassword) {
+                showToast('Please enter a new password', 'warning');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'danger');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters', 'warning');
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch('/profile/edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    username, 
+                    email, 
+                    dob, 
+                    gender, 
+                    phone, 
+                    current_password: currentPassword,
+                    new_password: newPassword 
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToast(data.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showToast(data.error || 'Failed to update profile', 'danger');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            showToast('Error updating profile', 'danger');
+        }
+    }
+</script>
+{% endblock %}

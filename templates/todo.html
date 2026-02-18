@@ -1,0 +1,710 @@
+{% extends "base.html" %}
+
+{% block title %}Todos - Blog & Todo{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="columns is-vcentered mb-4">
+            <div class="column">
+                <h1 class="title page-title is-inline">📋 My Todos</h1>
+            </div>
+            <div class="column is-narrow">
+                <div class="field has-addons">
+                    <div class="control">
+                        <input type="date" class="input" id="todoDatePicker" value="{{ selected_date }}" onchange="changeTodoDate()">
+                    </div>
+                    <div class="control">
+                        <button class="button is-info" onclick="document.getElementById('todoDatePicker').showPicker()">
+                            <span class="icon"><i class="fas fa-calendar"></i></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        
+        <!-- Add Todo Form -->
+        <div class="card mb-5">
+            <div class="card-content">
+                <h2 class="subtitle">Add New Todo</h2>
+                <form method="POST">
+                    <div class="field">
+                        <label class="label">Task</label>
+                        <div class="control">
+                            <input class="input" type="text" name="task" placeholder="What needs to be done?" required>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-6">
+                            <div class="field">
+                                <label class="label">Priority Level</label>
+                                <div class="control">
+                                    <div class="priority-options">
+                                        {% for i in range(1, 6) %}
+                                        <div class="priority-option">
+                                            <input type="radio" id="priority{{ i }}" name="priority" value="{{ i }}" {% if i == 1 %}checked{% endif %}>
+                                            <label for="priority{{ i }}">
+                                                <span class="priority-tag priority-{{ i }}">{{ i }}</span>
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <p class="help">1 = Highest, 5 = Lowest</p>
+                            </div>
+                        </div>
+
+                        <div class="column is-6">
+                            <div class="field">
+                                <label class="label">Category</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="category_id" id="categorySelect">
+                                            <option value="">No Category</option>
+                                            {% for category in categories %}
+                                            <option value="{{ category.id }}" data-color="{{ category.color }}">{{ category.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column is-6">
+                            <div class="field">
+                                <label class="label">Due Time</label>
+                                <div class="control">
+                                    <input class="input" type="time" name="due_time" value="23:59">
+                                </div>
+                                <p class="help">Default: 11:59 PM</p>
+                            </div>
+                        </div>
+
+                        <div class="column is-6">
+                            <div class="field">
+                                <label class="label">Recurring</label>
+                                <div class="control">
+                                    <div class="select is-fullwidth">
+                                        <select name="recurring_type">
+                                            <option value="">One-time</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p class="help">Auto-create next task when completed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="todo_date" id="selectedDate" value="{{ selected_date }}">
+                    
+                    <div class="field">
+                        <p class="help">Selected date: <strong id="selectedDateDisplay">{{ selected_date }}</strong></p>
+                    </div>
+                    
+                    <div class="field">
+                        <div class="control">
+                            <button class="button is-primary is-fullwidth" type="submit">
+                                <span class="icon"><i class="fas fa-plus"></i></span>
+                                <span>Add Todo</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Current Todos -->
+        <div class="todo-section">
+            <div class="is-flex is-justify-content-space-between is-align-items-center mb-4">
+                <h2 class="todo-section-title mb-0">
+                    <span class="icon has-text-info"><i class="fas fa-list"></i></span>
+                    Current Todos
+                </h2>
+            </div>
+            
+            <!-- Filter Bar for Current Todos -->
+            <div class="card filter-bar mb-4">
+                <div class="columns is-vcentered">
+                    <div class="column is-4">
+                        <div class="field">
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" id="searchInputCurrent" placeholder="Search current todos...">
+                                <span class="icon is-left">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="field">
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select id="categoryFilterCurrent">
+                                        <option value="">All Categories</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}" data-color="{{ category.color }}">
+                                            {{ category.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-2">
+                        <div class="field">
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select id="priorityFilterCurrent">
+                                        <option value="">All Priorities</option>
+                                        <option value="1">P1 (Highest)</option>
+                                        <option value="2">P2</option>
+                                        <option value="3">P3</option>
+                                        <option value="4">P4</option>
+                                        <option value="5">P5 (Lowest)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="buttons">
+                            <button class="button is-primary" onclick="applyFilters()">
+                                <span class="icon"><i class="fas fa-filter"></i></span>
+                                <span>Filter</span>
+                            </button>
+                            <button class="button is-light" onclick="clearCurrentFilters()">
+                                <span class="icon"><i class="fas fa-times"></i></span>
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="todo-list-container">
+            {% set current_todos = todos|selectattr('completed', 'equalto', 0)|list %}
+            {% if current_todos %}
+                {% for todo in current_todos %}
+                <div class="card mb-3 todo-item" data-priority="{{ todo.priority }}" data-category-id="{{ todo.category_id or '' }}">
+                    <div class="card-content">
+                        <div class="columns is-mobile is-vcentered mb-2">
+                            <div class="column">
+                                <div class="is-flex is-align-items-center mb-2">
+                                    <label class="checkbox">
+                                        <input type="checkbox" onchange="window.location.href='{{ url_for('toggle_todo', id=todo.id, date=selected_date) }}'">
+                                        <span class="task-text ml-2">{{ todo.task }}</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="tags mb-2">
+                                    <span class="tag priority-tag priority-{{ todo.priority }}">
+                                        <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
+                                        <span>P{{ todo.priority }}</span>
+                                    </span>
+                                    {% if is_today and todo.due_time < current_time %}
+                                    <span class="tag is-danger">
+                                        <span class="icon"><i class="fas fa-clock"></i></span>
+                                        <span>OVERDUE</span>
+                                    </span>
+                                    {% endif %}
+                                    {% if todo.category_name %}
+                                    <span class="tag category-tag" style="background: {{ todo.category_color }};" data-category-id="{{ todo.category_id }}">
+                                        <span class="category-color-dot" style="background: white;"></span>
+                                        {{ todo.category_name }}
+                                    </span>
+                                    {% endif %}
+                                    {% if todo.recurring_type %}
+                                    <span class="tag is-info is-light">
+                                        <span class="icon"><i class="fas fa-redo"></i></span>
+                                        <span>{{ todo.recurring_type|capitalize }}</span>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="todo-time">
+                                    <span class="icon-text">
+                                        <span class="icon"><i class="fas fa-clock"></i></span>
+                                        <span>Due: {{ todo.due_time }}</span>
+                                    </span>
+                                    <span class="mx-2">•</span>
+                                    <span class="icon-text">
+                                        <span class="icon"><i class="fas fa-calendar-plus"></i></span>
+                                        <span>Added: {{ todo.created_at }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="column is-narrow">
+                                <div class="buttons">
+                                    <button class="button is-small is-info is-light" onclick="toggleComments({{ todo.id }})">
+                                        <span class="icon"><i class="fas fa-comment"></i></span>
+                                        <span>Comments</span>
+                                    </button>
+                                    <a href="{{ url_for('delete_todo', id=todo.id, date=selected_date) }}" class="button is-small is-danger is-light">
+                                        <span class="icon"><i class="fas fa-trash"></i></span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Comments Section -->
+                        <div class="todo-comments" id="comments-{{ todo.id }}" style="display: none;">
+                            <div class="field">
+                                <label class="label is-small">Comments (Optional)</label>
+                                <div class="control">
+                                    <textarea class="textarea" id="comment-text-{{ todo.id }}" rows="3" placeholder="Add notes or comments about this task...">{{ todo.comments or '' }}</textarea>
+                                </div>
+                            </div>
+                            <div class="field is-grouped">
+                                <div class="control">
+                                    <button class="button is-small is-success" onclick="saveComment({{ todo.id }})">
+                                        <span class="icon"><i class="fas fa-save"></i></span>
+                                        <span>Save</span>
+                                    </button>
+                                </div>
+                                <div class="control">
+                                    <button class="button is-small is-light" onclick="clearComment({{ todo.id }})">
+                                        <span class="icon"><i class="fas fa-eraser"></i></span>
+                                        <span>Clear</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-content has-text-centered">
+                        <p class="has-text-grey">No current todos for {{ selected_date }}. Add one above!</p>
+                    </div>
+                </div>
+            {% endif %}
+            </div>
+        </div>
+
+        <!-- Finished Todos -->
+        <div class="todo-section">
+            <div class="is-flex is-justify-content-space-between is-align-items-center mb-4">
+                <h2 class="todo-section-title mb-0">
+                    <span class="icon has-text-success"><i class="fas fa-check-circle"></i></span>
+                    Finished Todos
+                </h2>
+            </div>
+            
+            <!-- Filter Bar for Finished Todos -->
+            <div class="card filter-bar mb-4">
+                <div class="columns is-vcentered">
+                    <div class="column is-4">
+                        <div class="field">
+                            <div class="control has-icons-left">
+                                <input class="input" type="text" id="searchInputFinished" placeholder="Search finished todos...">
+                                <span class="icon is-left">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="field">
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select id="categoryFilterFinished">
+                                        <option value="">All Categories</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}" data-color="{{ category.color }}">
+                                            {{ category.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-2">
+                        <div class="field">
+                            <div class="control">
+                                <div class="select is-fullwidth">
+                                    <select id="priorityFilterFinished">
+                                        <option value="">All Priorities</option>
+                                        <option value="1">P1 (Highest)</option>
+                                        <option value="2">P2</option>
+                                        <option value="3">P3</option>
+                                        <option value="4">P4</option>
+                                        <option value="5">P5 (Lowest)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-3">
+                        <div class="buttons">
+                            <button class="button is-primary" onclick="applyFilters()">
+                                <span class="icon"><i class="fas fa-filter"></i></span>
+                                <span>Filter</span>
+                            </button>
+                            <button class="button is-light" onclick="clearFinishedFilters()">
+                                <span class="icon"><i class="fas fa-times"></i></span>
+                                <span>Clear</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="todo-list-container">
+            {% set finished_todos = todos|selectattr('completed', 'equalto', 1)|list %}
+            {% if finished_todos %}
+                {% for todo in finished_todos %}
+                <div class="card mb-3 todo-item completed" data-priority="{{ todo.priority }}" data-category-id="{{ todo.category_id or '' }}">
+                    <div class="card-content">
+                        <div class="columns is-mobile is-vcentered mb-2">
+                            <div class="column">
+                                <div class="is-flex is-align-items-center mb-2">
+                                    <label class="checkbox">
+                                        <input type="checkbox" checked onchange="window.location.href='{{ url_for('toggle_todo', id=todo.id, date=selected_date) }}'">
+                                        <span class="task-text ml-2">{{ todo.task }}</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="tags mb-2">
+                                    <span class="tag priority-tag priority-{{ todo.priority }}">
+                                        <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
+                                        <span>P{{ todo.priority }}</span>
+                                    </span>
+                                    {% if todo.category_name %}
+                                    <span class="tag category-tag" style="background: {{ todo.category_color }};" data-category-id="{{ todo.category_id }}">
+                                        <span class="category-color-dot" style="background: white;"></span>
+                                        {{ todo.category_name }}
+                                    </span>
+                                    {% endif %}
+                                    {% if todo.recurring_type %}
+                                    <span class="tag is-info is-light">
+                                        <span class="icon"><i class="fas fa-redo"></i></span>
+                                        <span>{{ todo.recurring_type|capitalize }}</span>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="todo-time">
+                                    <span class="icon-text">
+                                        <span class="icon"><i class="fas fa-calendar-plus"></i></span>
+                                        <span>Added: {{ todo.created_at }}</span>
+                                    </span>
+                                    {% if todo.completed_at %}
+                                    <span class="mx-2">•</span>
+                                    <span class="icon-text">
+                                        <span class="icon"><i class="fas fa-check"></i></span>
+                                        <span>Finished: {{ todo.completed_at }}</span>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if todo.comments %}
+                                <div class="todo-comments-view mt-3">
+                                    <p class="has-text-weight-semibold is-size-7 mb-1">
+                                        <span class="icon is-small"><i class="fas fa-comment"></i></span>
+                                        Comments:
+                                    </p>
+                                    <p class="todo-comment-text">{{ todo.comments }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="column is-narrow">
+                                <a href="{{ url_for('delete_todo', id=todo.id, date=selected_date) }}" class="button is-small is-danger is-light">
+                                    <span class="icon"><i class="fas fa-trash"></i></span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-content has-text-centered">
+                        <p class="has-text-grey">No finished todos for {{ selected_date }}. Keep working!</p>
+                    </div>
+                </div>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    function changeTodoDate() {
+        const selectedDate = document.getElementById('todoDatePicker').value;
+        window.location.href = `/todo?date=${selectedDate}`;
+    }
+
+    function applyFilters() {
+        // Get filter values for current todos
+        const searchCurrent = document.getElementById('searchInputCurrent').value.toLowerCase();
+        const categoryCurrent = document.getElementById('categoryFilterCurrent').value;
+        const priorityCurrent = document.getElementById('priorityFilterCurrent').value;
+        
+        // Get filter values for finished todos
+        const searchFinished = document.getElementById('searchInputFinished').value.toLowerCase();
+        const categoryFinished = document.getElementById('categoryFilterFinished').value;
+        const priorityFinished = document.getElementById('priorityFilterFinished').value;
+        
+        // Filter current todos
+        const currentSection = document.querySelectorAll('.todo-section')[0];
+        const currentTodos = currentSection.querySelectorAll('.todo-item');
+        let currentVisible = 0;
+        
+        currentTodos.forEach(todo => {
+            const taskText = todo.querySelector('.task-text').textContent.toLowerCase();
+            const todoPriority = todo.getAttribute('data-priority');
+            const todoCategoryId = todo.getAttribute('data-category-id');
+            
+            const matchesSearch = !searchCurrent || taskText.includes(searchCurrent);
+            const matchesCategory = !categoryCurrent || todoCategoryId === categoryCurrent;
+            const matchesPriority = !priorityCurrent || todoPriority === priorityCurrent;
+            
+            if (matchesSearch && matchesCategory && matchesPriority) {
+                todo.style.display = '';
+                currentVisible++;
+            } else {
+                todo.style.display = 'none';
+            }
+        });
+        
+        // Filter finished todos
+        const finishedSection = document.querySelectorAll('.todo-section')[1];
+        const finishedTodos = finishedSection.querySelectorAll('.todo-item');
+        let finishedVisible = 0;
+        
+        finishedTodos.forEach(todo => {
+            const taskText = todo.querySelector('.task-text').textContent.toLowerCase();
+            const todoPriority = todo.getAttribute('data-priority');
+            const todoCategoryId = todo.getAttribute('data-category-id');
+            
+            const matchesSearch = !searchFinished || taskText.includes(searchFinished);
+            const matchesCategory = !categoryFinished || todoCategoryId === categoryFinished;
+            const matchesPriority = !priorityFinished || todoPriority === priorityFinished;
+            
+            if (matchesSearch && matchesCategory && matchesPriority) {
+                todo.style.display = '';
+                finishedVisible++;
+            } else {
+                todo.style.display = 'none';
+            }
+        });
+        
+        // Show "no results" message if needed
+        updateNoResultsMessage(currentSection, currentVisible, 'current');
+        updateNoResultsMessage(finishedSection, finishedVisible, 'finished');
+    }
+    
+    function updateNoResultsMessage(section, visibleCount, type) {
+        let noResultsMsg = section.querySelector('.no-results-message');
+        
+        if (visibleCount === 0) {
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('div');
+                noResultsMsg.className = 'card no-results-message';
+                noResultsMsg.innerHTML = `
+                    <div class="card-content has-text-centered">
+                        <p class="has-text-grey">No ${type} todos match your filters.</p>
+                    </div>
+                `;
+                section.appendChild(noResultsMsg);
+            }
+        } else {
+            if (noResultsMsg) {
+                noResultsMsg.remove();
+            }
+        }
+    }
+    
+    function clearCurrentFilters() {
+        document.getElementById('searchInputCurrent').value = '';
+        document.getElementById('categoryFilterCurrent').value = '';
+        document.getElementById('priorityFilterCurrent').value = '';
+        
+        // Show all current todos
+        const currentSection = document.querySelectorAll('.todo-section')[0];
+        const currentTodos = currentSection.querySelectorAll('.todo-item');
+        currentTodos.forEach(todo => {
+            todo.style.display = '';
+        });
+        
+        // Remove no results message for current section
+        const noResultsMsg = currentSection.querySelector('.no-results-message');
+        if (noResultsMsg) {
+            noResultsMsg.remove();
+        }
+    }
+    
+    function clearFinishedFilters() {
+        document.getElementById('searchInputFinished').value = '';
+        document.getElementById('categoryFilterFinished').value = '';
+        document.getElementById('priorityFilterFinished').value = '';
+        
+        // Show all finished todos
+        const finishedSection = document.querySelectorAll('.todo-section')[1];
+        const finishedTodos = finishedSection.querySelectorAll('.todo-item');
+        finishedTodos.forEach(todo => {
+            todo.style.display = '';
+        });
+        
+        // Remove no results message for finished section
+        const noResultsMsg = finishedSection.querySelector('.no-results-message');
+        if (noResultsMsg) {
+            noResultsMsg.remove();
+        }
+    }
+    
+    function clearFilters() {
+        clearCurrentFilters();
+        clearFinishedFilters();
+    }
+
+    // Allow Enter key to trigger search
+    document.getElementById('searchInputCurrent').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+    
+    document.getElementById('searchInputFinished').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+    
+    // Auto-filter on dropdown change
+    document.getElementById('categoryFilterCurrent').addEventListener('change', applyFilters);
+    document.getElementById('categoryFilterFinished').addEventListener('change', applyFilters);
+    document.getElementById('priorityFilterCurrent').addEventListener('change', applyFilters);
+    document.getElementById('priorityFilterFinished').addEventListener('change', applyFilters);
+
+    function toggleComments(todoId) {
+        const commentsDiv = document.getElementById(`comments-${todoId}`);
+        if (commentsDiv.style.display === 'none') {
+            commentsDiv.style.display = 'block';
+        } else {
+            commentsDiv.style.display = 'none';
+        }
+    }
+
+    async function saveComment(todoId) {
+        const commentText = document.getElementById(`comment-text-${todoId}`).value;
+        
+        try {
+            const response = await fetch(`/todo/comment/${todoId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ comments: commentText })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                showToast(data.message, 'success');
+            } else {
+                showToast('Failed to save comment', 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving comment:', error);
+            showToast('Error saving comment', 'danger');
+        }
+    }
+
+    async function clearComment(todoId) {
+        if (confirm('Are you sure you want to clear the comment?')) {
+            document.getElementById(`comment-text-${todoId}`).value = '';
+            await saveComment(todoId);
+        }
+    }
+
+    function showToast(message, category) {
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container';
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `notification is-${category} toast-notification`;
+        toast.innerHTML = `
+            <button class="delete"></button>
+            ${message}
+        `;
+
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+
+        const deleteBtn = toast.querySelector('.delete');
+        deleteBtn.addEventListener('click', () => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    // Update the selected date display
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('selectedDateDisplay').textContent = '{{ selected_date }}';
+        
+        // Add color indicators to category dropdowns
+        addCategoryColorIndicators();
+        
+        // Check if selected date is in the past
+        const selectedDate = new Date('{{ selected_date }}');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+        
+        // Disable add todo form if viewing past date
+        if (selectedDate < today) {
+            const form = document.querySelector('form');
+            const inputs = form.querySelectorAll('input, select, textarea, button[type="submit"]');
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+            
+            const helpText = document.querySelector('.help');
+            helpText.innerHTML = '<span style="color: #e74c3c;">⚠️ Viewing past date: {{ selected_date }}. You can only add todos to today or future dates.</span>';
+        }
+    });
+    
+    function addCategoryColorIndicators() {
+        const selects = ['categorySelect', 'categoryFilterCurrent', 'categoryFilterFinished'];
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                const options = select.querySelectorAll('option[data-color]');
+                options.forEach(option => {
+                    const color = option.getAttribute('data-color');
+                    if (color) {
+                        option.style.background = `linear-gradient(to right, ${color} 10px, transparent 10px)`;
+                    }
+                });
+            }
+        });
+    }
+
+</script>
+{% endblock %}
