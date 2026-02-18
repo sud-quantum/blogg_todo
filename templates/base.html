@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Blog & Todo{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% if session.user_id %}
+    <nav class="navbar is-light" role="navigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item" href="{{ url_for('dashboard') }}">
+                    <strong>📝 Blog & Todo</strong>
+                </a>
+                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarMenu">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+            <div class="navbar-menu" id="navbarMenu">
+                <div class="navbar-start">
+                    <a class="navbar-item" href="{{ url_for('dashboard') }}">
+                        <span class="icon"><i class="fas fa-home"></i></span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a class="navbar-item" href="{{ url_for('todo') }}">
+                        <span class="icon"><i class="fas fa-tasks"></i></span>
+                        <span>Todos</span>
+                    </a>
+                    <a class="navbar-item" href="{{ url_for('blog') }}">
+                        <span class="icon"><i class="fas fa-blog"></i></span>
+                        <span>Blog</span>
+                    </a>
+                </div>
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="theme-switcher" onclick="toggleTheme()">
+                            <span class="icon"><i class="fas fa-sun"></i></span>
+                            <div class="theme-toggle"></div>
+                            <span class="icon"><i class="fas fa-moon"></i></span>
+                        </div>
+                    </div>
+                    <div class="navbar-item has-dropdown is-hoverable" id="reminderDropdown">
+                        <a class="navbar-link">
+                            <span class="icon has-text-info">
+                                <i class="fas fa-bell"></i>
+                            </span>
+                            <span class="tag is-danger is-rounded" id="reminderCount" style="display: none;">0</span>
+                        </a>
+                        <div class="navbar-dropdown is-right" id="reminderList">
+                            <div class="navbar-item">
+                                <p class="has-text-grey">Loading reminders...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="navbar-item has-dropdown is-hoverable">
+                        <a class="navbar-link">
+                            <span class="icon"><i class="fas fa-user-circle"></i></span>
+                            <span>{{ session.username }}</span>
+                        </a>
+                        <div class="navbar-dropdown is-right">
+                            <a class="navbar-item" href="{{ url_for('profile') }}">
+                                <span class="icon"><i class="fas fa-user"></i></span>
+                                <span>Profile</span>
+                            </a>
+                            <hr class="navbar-divider">
+                            <a class="navbar-item" href="{{ url_for('logout') }}">
+                                <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                                <span>Logout</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="main-container">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="notification is-{{ category }} toast-notification">
+                    <button class="delete"></button>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <script>
+        // Theme management
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            // Toast notifications - auto dismiss after 5 seconds
+            const toastNotifications = document.querySelectorAll('.toast-notification');
+            toastNotifications.forEach(($notification) => {
+                // Slide in animation
+                setTimeout(() => {
+                    $notification.classList.add('show');
+                }, 100);
+
+                // Auto dismiss after 5 seconds
+                setTimeout(() => {
+                    $notification.classList.add('hide');
+                    setTimeout(() => {
+                        $notification.remove();
+                    }, 300);
+                }, 5000);
+            });
+
+            // Notification close buttons
+            (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+                const $notification = $delete.parentNode;
+                $delete.addEventListener('click', () => {
+                    $notification.classList.add('hide');
+                    setTimeout(() => {
+                        $notification.remove();
+                    }, 300);
+                });
+            });
+
+            // Mobile navbar burger
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            if ($navbarBurgers.length > 0) {
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+            
+            // Load reminders
+            {% if session.user_id %}
+            loadReminders();
+            setInterval(loadReminders, 60000); // Refresh every minute
+            {% endif %}
+        });
+        
+        async function loadReminders() {
+            try {
+                const response = await fetch('/api/reminders');
+                const data = await response.json();
+                
+                console.log('=== FRONTEND REMINDER DEBUG ===');
+                console.log('Current time:', new Date().toLocaleTimeString());
+                console.log('Reminders received:', data.reminders);
+                console.log('Count:', data.reminders ? data.reminders.length : 0);
+                console.log('================================');
+                
+                const reminderCount = document.getElementById('reminderCount');
+                const reminderList = document.getElementById('reminderList');
+                
+                if (data.reminders && data.reminders.length > 0) {
+                    reminderCount.textContent = data.reminders.length;
+                    reminderCount.style.display = 'inline-block';
+                    
+                    let html = '<div class="navbar-item"><p class="has-text-weight-bold">Today\'s Tasks</p></div>';
+                    data.reminders.forEach(reminder => {
+                        // Priority colors matching the new scheme
+                        const priorityColors = {
+                            1: '#dc2626', // Red
+                            2: '#ea580c', // Orange-Red
+                            3: '#f59e0b', // Amber
+                            4: '#84cc16', // Lime
+                            5: '#22c55e'  // Green
+                        };
+                        const priorityColor = priorityColors[reminder.priority] || '#f59e0b';
+                        
+                        // Overdue badge
+                        const overdueBadge = reminder.is_overdue 
+                            ? '<span class="tag is-danger is-small ml-1">OVERDUE</span>' 
+                            : '';
+                        
+                        html += `
+                            <a class="navbar-item" href="/todo?date=${reminder.todo_date}">
+                                <div style="width: 100%;">
+                                    <div class="is-flex is-justify-content-space-between is-align-items-center mb-1">
+                                        <div class="is-flex is-align-items-center">
+                                            <span class="tag is-small mr-2" style="background: ${priorityColor}; color: white;">
+                                                <span class="icon is-small"><i class="fas fa-exclamation-circle"></i></span>
+                                                <span>P${reminder.priority}</span>
+                                            </span>
+                                            <span class="is-size-7">${reminder.task.substring(0, 25)}${reminder.task.length > 25 ? '...' : ''}</span>
+                                        </div>
+                                    </div>
+                                    <div class="is-flex is-align-items-center">
+                                        <span class="is-size-7 has-text-grey">Due: ${reminder.due_time}</span>
+                                        ${overdueBadge}
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                    reminderList.innerHTML = html;
+                } else {
+                    reminderCount.style.display = 'none';
+                    reminderList.innerHTML = '<div class="navbar-item"><p class="has-text-grey">No tasks for today</p></div>';
+                }
+            } catch (error) {
+                console.error('Error loading reminders:', error);
+                const reminderList = document.getElementById('reminderList');
+                reminderList.innerHTML = '<div class="navbar-item"><p class="has-text-danger">Error loading reminders</p></div>';
+            }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
